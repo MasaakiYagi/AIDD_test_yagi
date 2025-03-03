@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .game-board {
+    @apply grid grid-cols-4 gap-2 bg-gray-100 p-4 rounded-lg;
+  }
+
+  .cell {
+    @apply w-16 h-16 flex items-center justify-center text-xl font-bold rounded-lg;
+  }
+
+  .score-board {
+    @apply text-2xl font-bold mb-4 text-center;
+  }
+
+  .ranking-board {
+    @apply mt-8 max-w-md mx-auto;
+  }
+
+  .ranking-title {
+    @apply text-xl font-bold mb-4;
+  }
+
+  .ranking-item {
+    @apply flex justify-between py-2 border-b last:border-b-0;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center;
+  }
+
+  .modal-content {
+    @apply bg-white p-6 rounded-lg shadow-lg max-w-md w-full;
+  }
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.animate-pop {
+  animation: pop 0.3s ease-in-out;
+}
+
+/* Game tiles */
+.tile-2 { @apply bg-gray-200 text-gray-700; }
+.tile-4 { @apply bg-gray-300 text-gray-700; }
+.tile-8 { @apply bg-orange-400 text-white; }
+.tile-16 { @apply bg-orange-500 text-white; }
+.tile-32 { @apply bg-orange-600 text-white; }
+.tile-64 { @apply bg-orange-700 text-white; }
+.tile-128 { @apply bg-yellow-400 text-white text-2xl; }
+.tile-256 { @apply bg-yellow-500 text-white text-2xl; }
+.tile-512 { @apply bg-yellow-600 text-white text-2xl; }
+.tile-1024 { @apply bg-yellow-700 text-white text-xl; }
+.tile-2048 { @apply bg-yellow-800 text-white text-xl; }
