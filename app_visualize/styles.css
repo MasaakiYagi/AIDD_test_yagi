@@ -1,0 +1,251 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.upload-section {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+input[type="file"] {
+    margin-bottom: 20px;
+}
+
+.visualize-btn {
+    display: block;
+    padding: 12px;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    flex: 1;
+}
+
+.visualize-btn:hover {
+    background-color: #27ae60;
+}
+
+.visualize-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+#visualization-container {
+    background-color: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    min-height: 80vh;
+    width: 100%;
+    margin: 20px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* SVG スタイル */
+.segment-group {
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.dial-segment {
+    stroke: white;
+    stroke-width: 1;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.dial-segment:hover {
+    stroke-width: 2;
+    stroke: #333;
+}
+
+.dial-center {
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.dial-center:hover {
+    stroke-width: 2;
+    stroke: #333;
+}
+
+.segment-label {
+    font-weight: bold;
+    pointer-events: none;
+    user-select: none;
+    fill: white;
+    text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.5);
+}
+
+.dial-center-text {
+    font-size: 24px;
+    font-weight: bold;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    user-select: none;
+    fill: white;
+}
+
+/* ランキングポップアップ */
+.ranking-popup {
+    position: fixed;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    min-width: 350px;
+    max-width: 500px;
+    z-index: 9999;
+    display: none;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: auto;
+}
+
+#ranking-title {
+    margin-top: 0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.ranking-item:hover {
+    background-color: #f5f9ff;
+}
+
+.ranking-name {
+    flex: 2;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 5px;
+}
+
+.ranking-bar-container {
+    flex: 1;
+    height: 15px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 10px;
+}
+
+.ranking-bar {
+    height: 100%;
+    background-color: #3498db;
+    border-radius: 10px;
+    transition: width 0.5s ease-out;
+}
+
+.ranking-value {
+    font-size: 12px;
+    color: #7f8c8d;
+    min-width: 80px;
+    text-align: right;
+}
+
+/* グレーアウト効果 */
+.grayed-out {
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.demo-btn {
+    display: block;
+    padding: 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    flex: 1;
+}
+
+.demo-btn:hover {
+    background-color: #2980b9;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .upload-section {
+        padding: 20px;
+    }
+    
+    #visualization-container {
+        padding: 15px;
+    }
+    
+    .ranking-popup {
+        min-width: 280px;
+        max-width: 350px;
+    }
+    
+    .ranking-name {
+        flex: 1.5;
+    }
+    
+    .ranking-bar-container {
+        flex: 0.8;
+    }
+} 
