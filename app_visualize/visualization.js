@@ -24,6 +24,14 @@ class Visualization {
         this.radiusIncrement = 100;  // 各階層ごとの半径の増分
         this.maxLevels = 10;        // サポートする最大階層数
         
+        // ポップアップの固定表示状態を追跡
+        this.isPinned = false;
+        this.pinnedNodePath = null;
+        
+        // ドラッグアンドドロップ用の変数
+        this.isDragging = false;
+        this.dragOffset = { x: 0, y: 0 };
+        
         // レスポンシブ対応のためのリサイズイベントを設定
         window.addEventListener('resize', this.handleResize.bind(this));
     }
@@ -742,6 +750,19 @@ class Visualization {
                         this.handleSegmentClick(nodePath);
                     }
                 });
+                
+            // 中心円のクリックイベント
+            this.svg.select('.dial-center')
+                .on('click', (event, d) => {
+                    console.log("中心円がクリックされました", event.target);
+                    const center = d3.select(event.target);
+                    const nodeName = center.attr('data-node-name');
+                    
+                    if (nodeName) {
+                        console.log(`クリックされた中心円のノード名: ${nodeName}`);
+                        this.handleSegmentClick(nodeName);
+                    }
+                });
             
             // セグメントのマウスオーバーイベント
             this.svg.selectAll('.dial-segment-group')
@@ -756,6 +777,12 @@ class Visualization {
                     if (nodePath) {
                         this.isHovering = true;
                         this.currentHoveredSegment = event.target;
+                        
+                        // 固定表示中の場合、別のセグメントのハイライトとポップアップ表示をスキップ
+                        if (this.isPinned && this.pinnedNodePath !== nodePath) {
+                            console.log("別のポップアップが固定表示中のため、ハイライトとポップアップ表示をスキップします");
+                            return;
+                        }
                         
                         // ハイライトを更新
                         this.scheduleHighlightUpdate(nodePath);
@@ -774,10 +801,16 @@ class Visualization {
                     this.isHovering = false;
                     this.currentHoveredSegment = null;
                     
+                    // 固定表示中の場合、ハイライトとポップアップの非表示をスキップ
+                    if (this.isPinned) {
+                        console.log("ポップアップが固定表示中のため、ハイライトとポップアップの非表示をスキップします");
+                        return;
+                    }
+                    
                     // ポップアップにマウスが乗っていない場合のみ非表示にする
                     // 少し遅延を設けて、マウスがポップアップに移動する時間を確保
                     setTimeout(() => {
-                        if (!this.isMouseOverPopup && !this.isHovering) {
+                        if (!this.isMouseOverPopup && !this.isHovering && !this.isPinned) {
                             console.log("セグメントからマウスが離れ、ポップアップ上にもないため、ポップアップを非表示にします");
                             this.hideRankingPopup();
                         } else {
@@ -785,7 +818,7 @@ class Visualization {
                         }
                         
                         // ハイライトの更新も同様に遅延
-                        if (!this.isHovering && !this.isMouseOverAnySegment() && !this.isMouseOverPopup) {
+                        if (!this.isHovering && !this.isMouseOverAnySegment() && !this.isMouseOverPopup && !this.isPinned) {
                             console.log("マウスがセグメントとポップアップから離れたため、ハイライトをリセットします");
                             this.scheduleHighlightUpdate(null);
                         }
@@ -806,6 +839,12 @@ class Visualization {
                         this.isHovering = true;
                         this.currentHoveredSegment = event.target;
                         
+                        // 固定表示中の場合、別のセグメントのポップアップ表示をスキップ
+                        if (this.isPinned && this.pinnedNodePath !== nodeName) {
+                            console.log("別のポップアップが固定表示中のため、ポップアップ表示をスキップします");
+                            return;
+                        }
+                        
                         // 中心円の場合はハイライト更新を行わない
                         // this.scheduleHighlightUpdate(nodeName);
                         
@@ -822,10 +861,16 @@ class Visualization {
                     this.isHovering = false;
                     this.currentHoveredSegment = null;
                     
+                    // 固定表示中の場合、ポップアップの非表示をスキップ
+                    if (this.isPinned) {
+                        console.log("ポップアップが固定表示中のため、ポップアップの非表示をスキップします");
+                        return;
+                    }
+                    
                     // ポップアップにマウスが乗っていない場合のみ非表示にする
                     // 少し遅延を設けて、マウスがポップアップに移動する時間を確保
                     setTimeout(() => {
-                        if (!this.isMouseOverPopup && !this.isHovering) {
+                        if (!this.isMouseOverPopup && !this.isHovering && !this.isPinned) {
                             console.log("中心円からマウスが離れ、ポップアップ上にもないため、ポップアップを非表示にします");
                             this.hideRankingPopup();
                         } else {
@@ -947,9 +992,135 @@ class Visualization {
     handleSegmentClick(nodePath) {
         console.log(`handleSegmentClick: ${nodePath}`);
         
-        // ここにクリック時の処理を実装
-        // 例: 詳細情報の表示など
-        // alert(`選択されたセグメント: ${nodePath}`); // alert表示を削除
+        // 既に固定表示されているポップアップがある場合
+        if (this.isPinned) {
+            // 同じノードがクリックされた場合は固定を解除
+            if (this.pinnedNodePath === nodePath) {
+                this.unpinPopup();
+            }
+            // 別のノードがクリックされた場合は何もしない（固定表示中は他のポップアップを表示しない）
+            return;
+        }
+        
+        // ポップアップを固定表示
+        this.pinPopup(nodePath);
+    }
+    
+    /**
+     * ポップアップを固定表示する
+     * @param {string} nodePath - 固定表示するノードのパス
+     */
+    pinPopup(nodePath) {
+        console.log(`pinPopup: ${nodePath}`);
+        
+        // 固定表示状態を設定
+        this.isPinned = true;
+        this.pinnedNodePath = nodePath;
+        
+        // ポップアップ要素を取得
+        const popup = document.getElementById("ranking-popup");
+        if (!popup) return;
+        
+        // 固定表示用のクラスを追加
+        popup.classList.add('pinned');
+        
+        // ×ボタンがなければ追加
+        if (!popup.querySelector('.popup-close-btn')) {
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'popup-close-btn';
+            closeBtn.textContent = '×';
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // イベントの伝播を停止
+                this.unpinPopup();
+            });
+            popup.appendChild(closeBtn);
+        }
+        
+        // ドラッグアンドドロップ機能を設定
+        this.setupDragAndDrop(popup);
+    }
+    
+    /**
+     * ポップアップの固定表示を解除する
+     */
+    unpinPopup() {
+        console.log("unpinPopup");
+        
+        // 固定表示状態をリセット
+        this.isPinned = false;
+        this.pinnedNodePath = null;
+        
+        // ポップアップ要素を取得
+        const popup = document.getElementById("ranking-popup");
+        if (!popup) return;
+        
+        // 固定表示用のクラスを削除
+        popup.classList.remove('pinned');
+        
+        // ポップアップを非表示
+        this.hideRankingPopup();
+        
+        // ハイライトをリセット
+        this.scheduleHighlightUpdate(null);
+    }
+    
+    /**
+     * ポップアップのドラッグアンドドロップ機能を設定
+     * @param {HTMLElement} popup - ポップアップ要素
+     */
+    setupDragAndDrop(popup) {
+        // ドラッグ開始時の処理
+        const onMouseDown = (e) => {
+            // ×ボタンがクリックされた場合は何もしない
+            if (e.target.classList.contains('popup-close-btn')) return;
+            
+            this.isDragging = true;
+            popup.classList.add('dragging');
+            
+            // マウス位置とポップアップの位置の差分を計算
+            const rect = popup.getBoundingClientRect();
+            this.dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            // イベントリスナーを追加
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            
+            // デフォルトの動作とイベントの伝播を防止
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        
+        // ドラッグ中の処理
+        const onMouseMove = (e) => {
+            if (!this.isDragging) return;
+            
+            // ポップアップの新しい位置を計算
+            const left = e.clientX - this.dragOffset.x;
+            const top = e.clientY - this.dragOffset.y;
+            
+            // ポップアップが画面外に出ないように調整
+            const maxLeft = window.innerWidth - popup.offsetWidth;
+            const maxTop = window.innerHeight - popup.offsetHeight;
+            
+            popup.style.left = `${Math.max(0, Math.min(maxLeft, left))}px`;
+            popup.style.top = `${Math.max(0, Math.min(maxTop, top))}px`;
+        };
+        
+        // ドラッグ終了時の処理
+        const onMouseUp = () => {
+            this.isDragging = false;
+            popup.classList.remove('dragging');
+            
+            // イベントリスナーを削除
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        // マウスダウンイベントリスナーを設定
+        popup.addEventListener('mousedown', onMouseDown);
     }
     
     /**
@@ -1076,6 +1247,12 @@ class Visualization {
     showRankingPopup(event, nodePath) {
         console.log(`showRankingPopup: ${nodePath}`);
         
+        // 固定表示中の場合、別のノードのポップアップは表示しない
+        if (this.isPinned && this.pinnedNodePath !== nodePath) {
+            console.log("別のポップアップが固定表示中のため、表示をスキップします");
+            return;
+        }
+        
         // 既存のポップアップ要素を取得
         const popup = document.getElementById("ranking-popup");
         const rankingTitle = document.getElementById("ranking-title");
@@ -1083,6 +1260,12 @@ class Visualization {
         
         if (!popup || !rankingTitle || !rankingContent) {
             console.error("ランキングポップアップの要素が見つかりません");
+            return;
+        }
+        
+        // 固定表示中の場合は位置を変更しない
+        if (this.isPinned && this.pinnedNodePath === nodePath) {
+            console.log("ポップアップは既に固定表示されています");
             return;
         }
         
@@ -1164,6 +1347,12 @@ class Visualization {
     hideRankingPopup() {
         console.log("hideRankingPopup");
         
+        // 固定表示中の場合は非表示にしない
+        if (this.isPinned) {
+            console.log("ポップアップが固定表示中のため、非表示にしません");
+            return;
+        }
+        
         // ポップアップにマウスが乗っている場合は非表示にしない
         if (this.isMouseOverPopup) {
             console.log("ポップアップにマウスが乗っているため、非表示にしません");
@@ -1176,7 +1365,7 @@ class Visualization {
             
             // アニメーション終了後に非表示に
             setTimeout(() => {
-                if (!this.isMouseOverPopup && !this.isHovering) {
+                if (!this.isMouseOverPopup && !this.isHovering && !this.isPinned) {
                     popup.style.display = 'none';
                     this.isPopupVisible = false;
                 }
